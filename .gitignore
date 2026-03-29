@@ -1,6 +1,37 @@
+# Environment variables
 .env
 *.env
 
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+env/
+env_new/
+hydroleap-backend/env_new/
+venv/
+.venv/
+
+# Node
+node_modules/
+hydroleap-frontend/node_modules/
+
+# Build outputs
+hydroleap-frontend/build/
+build/
+dist/
+
+# IDE / OS
+.DS_Store
+.vscode/
+.idea/
+
+# Claude AI config
+.claude/
+artifacts-builder.skill
+
+# Large media files
 backend/config/aws.js
 hydroleap-frontend/src/assets/sea_6.mp4
 hydroleap-frontend/src/assets/sea_6.mov

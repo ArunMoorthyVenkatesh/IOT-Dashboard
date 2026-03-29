@@ -1,9 +1,18 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel, EmailStr
-from db.dynamo_client import get_table
+from utils.dynamo_client import get_table, ensure_table
 from boto3.dynamodb.conditions import Attr
+import jwt
+import os
+import uuid
+from datetime import datetime, timedelta, timezone
+
+SECRET = os.environ.get("JWT_SECRET", "dev_secret_fallback")
 
 router = APIRouter()
+
+ensure_table("UserSessions", "session_id")
+sessions_table = get_table("UserSessions")
 
 class LoginRequest(BaseModel):
     email: EmailStr
@@ -41,8 +50,30 @@ def login(data: LoginRequest):
     # Prepare response (exclude password)
     profile = {k: v for k, v in user.items() if k != "password"}
 
+    # Create a session record
+    session_id = str(uuid.uuid4())
+    sessions_table.put_item(Item={
+        "session_id":  session_id,
+        "user_email":  email,
+        "role":        role,
+        "device":      "",          # filled in by frontend via /user/sessions/update-device
+        "created_at":  datetime.utcnow().isoformat(),
+        "is_active":   True,
+    })
+
+    # Generate JWT token (session_id embedded so backend can identify the session)
+    payload = {
+        "email":      email,
+        "role":       role,
+        "session_id": session_id,
+        "exp":        datetime.now(timezone.utc) + timedelta(hours=24)
+    }
+    token = jwt.encode(payload, SECRET, algorithm="HS256")
+
     return {
-        "message": "Login successful.",
-        "profile": profile,
-        "role": role
+        "message":    "Login successful.",
+        "profile":    profile,
+        "role":       role,
+        "token":      token,
+        "session_id": session_id,
     }

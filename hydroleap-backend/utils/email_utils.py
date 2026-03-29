@@ -1,31 +1,43 @@
-import smtplib
-from email.mime.text import MIMEText
+import boto3
+from botocore.exceptions import ClientError
 from os import getenv
 from dotenv import load_dotenv
+from fastapi import HTTPException
 
-# Load environment variables from .env
 load_dotenv()
 
-EMAIL_USER = getenv("EMAIL_USER")
-EMAIL_PASS = getenv("EMAIL_PASS")
+SES_SENDER = getenv("SES_SENDER")
+AWS_REGION  = getenv("AWS_REGION", "us-east-1")
+
+def _ses_client():
+    return boto3.client("ses", region_name=AWS_REGION)
 
 def send_email(to_email: str, subject: str, body: str):
-    msg = MIMEText(body)
-    msg["Subject"] = subject
-    msg["From"] = EMAIL_USER
-    msg["To"] = to_email
+    # EMAIL DISABLED — uncomment below to re-enable SES sending
+    print(f"[EMAIL SUPPRESSED] To: {to_email} | Subject: {subject}")
+    return
 
-    try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(EMAIL_USER, EMAIL_PASS)
-            server.send_message(msg)
-        print(f"✅ Email sent to {to_email}")
-    except Exception as e:
-        print(f"❌ Failed to send email to {to_email}: {e}")
+    # try:
+    #     _ses_client().send_email(
+    #         Source=SES_SENDER,
+    #         Destination={"ToAddresses": [to_email]},
+    #         Message={
+    #             "Subject": {"Data": subject, "Charset": "UTF-8"},
+    #             "Body":    {"Text": {"Data": body,    "Charset": "UTF-8"}},
+    #         },
+    #     )
+    #     print(f"✅ Email sent to {to_email}")
+    # except ClientError as e:
+    #     code = e.response["Error"]["Code"]
+    #     print(f"❌ SES error sending to {to_email}: {code} — {e}")
+    #     raise HTTPException(status_code=500, detail=f"Failed to send email: {code}")
 
 def send_otp_email(to_email: str, otp: str):
     subject = "OTP Verification - Hydroleap"
-    body = f"Your OTP for verification is: {otp}\n\nThis OTP is valid for a short period. Do not share it with anyone."
+    body = (
+        f"Your OTP for verification is: {otp}\n\n"
+        "This OTP is valid for a short period. Do not share it with anyone."
+    )
     send_email(to_email, subject, body)
 
 def send_registration_success_email(to_email: str, name: str):
@@ -36,7 +48,7 @@ Thank you for registering on the Hydroleap platform.
 
 Your request is currently under review. You will receive another email once your registration is approved by an admin.
 
-Regards,  
+Regards,
 Hydroleap Team"""
     send_email(to_email, subject, body)
 
@@ -50,9 +62,8 @@ Please wait for an admin to review your request. You will receive another email 
 
 If you did not initiate this registration or need help, please contact support.
 
-Regards,  
-Hydroleap Team
-"""
+Regards,
+Hydroleap Team"""
     send_email(to_email, subject, body)
 
 def send_approved_duplicate_email(to_email: str, name: str):
@@ -63,11 +74,10 @@ Our records show that this email is already fully registered on Hydroleap.
 
 If you forgot your password, please use the password reset option on the login page.
 
-If you did not create this account or believe this is an error, please contact support for assistance.
+If you did not create this account or believe this is an error, please contact support.
 
-Regards,  
-Hydroleap Team
-"""
+Regards,
+Hydroleap Team"""
     send_email(to_email, subject, body)
 
 def send_approval_email(to_email: str, name: str):
@@ -77,7 +87,7 @@ def send_approval_email(to_email: str, name: str):
 Congratulations! Your registration has been approved.
 You can now log in and access your Hydroleap account.
 
-Regards,  
+Regards,
 Hydroleap Team"""
     send_email(to_email, subject, body)
 
@@ -88,7 +98,6 @@ def send_rejection_email(to_email: str, name: str):
 We regret to inform you that your registration was not approved at this time.
 If you believe this is a mistake or need more information, please contact support.
 
-Regards,  
+Regards,
 Hydroleap Team"""
     send_email(to_email, subject, body)
-

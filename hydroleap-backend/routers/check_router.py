@@ -1,6 +1,6 @@
 # routers/check_email_router.py
 from fastapi import APIRouter
-from db.dynamo_client import get_table
+from utils.dynamo_client import get_table
 from boto3.dynamodb.conditions import Attr
 
 router = APIRouter()

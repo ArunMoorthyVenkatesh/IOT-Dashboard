@@ -1,8 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from models.pending_user_model import PendingUser
-from models.pending_admin_model import PendingAdmin
-from db.dynamo_client import get_table
-from utils.otp_utils import verify_otp
+from utils.dynamo_client import get_table
 from utils.email_utils import (
     send_registration_success_email,
     send_pending_duplicate_email,
@@ -18,18 +15,13 @@ router = APIRouter()
 def register(data: dict):
     role = str(data.get("role", "user")).strip().lower()
     email = str(data.get("email", "")).strip().lower()
-    otp = str(data.get("otp", "")).strip()
     password = str(data.get("password", "")).strip()
     confirmPassword = str(data.get("confirmPassword", "")).strip()
 
-    print(f"[REGISTER] role={role}, email={email}, otp={otp}")
+    print(f"[REGISTER] role={role}, email={email}")
 
     if password != confirmPassword:
         raise HTTPException(status_code=400, detail="Passwords do not match")
-
-    if not verify_otp(email, otp):
-        print(f"[ERROR] OTP verification failed for {email} with otp {otp}")
-        raise HTTPException(status_code=400, detail="Invalid OTP (or verification failed)")
 
     name = f"{data.get('firstName','').strip()} {data.get('middleName','').strip()} {data.get('lastName','').strip()}".replace("  ", " ").strip()
 

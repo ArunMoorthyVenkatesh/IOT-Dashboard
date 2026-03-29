@@ -1,0 +1,206 @@
+/* ============================================================
+   AdminProfileSection — Admin profile card
+   ============================================================ */
+
+.admin-prof-card {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4);
+  font-family: var(--font-family);
+}
+
+.admin-prof-card h3 {
+  color: var(--accent);
+  font-weight: var(--weight-bold);
+  font-size: var(--text-xl);
+  margin-bottom: var(--space-4);
+  text-align: center;
+}
+
+.admin-prof-fields { margin-bottom: var(--space-5); }
+
+.admin-prof-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+
+.admin-prof-label {
+  min-width: 120px;
+  color: var(--accent-dark);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-md);
+}
+
+.admin-prof-value {
+  color: var(--text-1);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-sm);
+  margin-left: var(--space-2);
+}
+
+.admin-prof-loading {
+  padding: var(--space-7);
+  color: var(--text-3);
+  text-align: center;
+}
+
+/* Hero row */
+.admin-prof-hero {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.admin-prof-avatar {
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00d4c8, #0ea5e9);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; font-weight: var(--weight-bold);
+  color: #fff; flex-shrink: 0;
+}
+
+.admin-prof-name {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--text-1);
+}
+
+.admin-prof-email {
+  font-size: var(--text-sm);
+  color: var(--text-3);
+}
+
+.admin-prof-role-badge {
+  display: inline-block;
+  margin-top: var(--space-1);
+  padding: 1px 10px;
+  border-radius: var(--r-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  border: 1px solid var(--accent-border);
+  text-transform: capitalize;
+}
+
+.admin-prof-edit-btn {
+  margin-left: auto;
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--r-sm);
+  border: 1.5px solid var(--accent-border);
+  background: transparent;
+  color: var(--accent);
+  font-size: var(--text-sm);
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.admin-prof-edit-btn:hover { background: var(--accent-light); }
+
+/* Banners */
+.admin-prof-banner {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--r-sm);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  margin-bottom: var(--space-4);
+  text-align: center;
+}
+.admin-prof-banner--success {
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  border: 1px solid var(--accent-border);
+}
+.admin-prof-banner--error {
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--danger);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* Edit inputs */
+.admin-prof-input {
+  flex: 1;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  border-radius: var(--r-xs);
+  border: 1.5px solid var(--accent-border);
+  background: var(--bg);
+  color: var(--text-1);
+  font-family: var(--font-family);
+  outline: none;
+}
+.admin-prof-input:focus { border-color: var(--accent); }
+
+.admin-prof-select {
+  flex: 1;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  border-radius: var(--r-xs);
+  border: 1.5px solid var(--accent-border);
+  background: var(--bg);
+  color: var(--text-1);
+  font-family: var(--font-family);
+  outline: none;
+}
+
+.admin-prof-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+/* Action buttons */
+.admin-prof-actions {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+  flex-wrap: wrap;
+}
+
+.admin-prof-save-btn {
+  padding: var(--space-2) var(--space-6);
+  border-radius: var(--r-sm);
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: var(--text-sm);
+  font-family: var(--font-family);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.admin-prof-save-btn:hover:not(:disabled) { background: var(--accent-dark); }
+.admin-prof-save-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.admin-prof-cancel-btn {
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--r-sm);
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--text-2);
+  font-size: var(--text-sm);
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.admin-prof-cancel-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+.admin-prof-msg {
+  color: var(--danger);
+  font-weight: var(--weight-semibold);
+  margin-bottom: var(--space-3);
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .admin-prof-card { padding: var(--space-5); }
+  .admin-prof-hero { gap: var(--space-3); }
+  .admin-prof-edit-btn { margin-left: 0; width: 100%; }
+  .admin-prof-row { flex-direction: column; align-items: flex-start; }
+  .admin-prof-input, .admin-prof-select { width: 100%; }
+}
