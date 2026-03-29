@@ -52,10 +52,10 @@ Open your terminal and run these commands one at a time. Copy and paste each lin
 
 ```bash
 # Step 1: Download the code to your computer
-git clone https://github.com/ArunMoorthyVenkatesh/Hydroleap.git
+git clone https://github.com/ArunMoorthyVenkatesh/IOT-Dashboard.git
 
 # Step 2: Go into the project folder
-cd Hydroleap
+cd IOT-Dashboard
 ```
 
 You should now be inside the project folder. You can confirm by running `ls` (Mac/Linux) or `dir` (Windows) — you'll see folders like `hydroleap-backend` and `hydroleap-frontend`.
