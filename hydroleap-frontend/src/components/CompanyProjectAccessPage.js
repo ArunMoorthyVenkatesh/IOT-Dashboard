@@ -7,7 +7,7 @@ const CompanyProjectAccessPage = () => {
   const [companies,         setCompanies]         = useState([]);
   const [projects,          setProjects]          = useState([]);
   const [selectedCompany,   setSelectedCompany]   = useState("");
-  const [assignedProjects,  setAssignedProjects]  = useState([]);
+  const [assignedAssetIds,  setAssignedAssetIds]  = useState([]);
   const [allAssignments,    setAllAssignments]    = useState([]);
   const [loading,           setLoading]           = useState(true);
   const [actionLoading,     setActionLoading]     = useState(false);
@@ -16,7 +16,7 @@ const CompanyProjectAccessPage = () => {
   const [selectedForAssign, setSelectedForAssign] = useState([]);
   const [selectedForRemove, setSelectedForRemove] = useState([]);
   const [toast,             setToast]             = useState(null);
-  const [tab,               setTab]               = useState("assign"); // "assign" | "remove"
+  const [tab,               setTab]               = useState("assign");
 
   const showToast = (msg, type = "ok") => {
     setToast({ msg, type });
@@ -37,13 +37,13 @@ const CompanyProjectAccessPage = () => {
 
   useEffect(() => {
     if (selectedCompany) {
-      setAssignedProjects(
+      setAssignedAssetIds(
         allAssignments
           .filter(a => (a.company || "").toLowerCase() === selectedCompany.toLowerCase())
-          .map(a => a.projectId)
+          .map(a => a.asset_id)
       );
     } else {
-      setAssignedProjects([]);
+      setAssignedAssetIds([]);
     }
     setSelectedForAssign([]);
     setSelectedForRemove([]);
@@ -59,13 +59,13 @@ const CompanyProjectAccessPage = () => {
   );
 
   const unassignedProjects = projects.filter(p =>
-    !assignedProjects.includes(p.projectId) &&
-    p.projectId.toLowerCase().includes(projectSearch.toLowerCase())
+    !assignedAssetIds.includes(p.asset_id) &&
+    (p.asset_id || "").toLowerCase().includes(projectSearch.toLowerCase())
   );
 
   const assignedProjectObjs = projects.filter(p =>
-    assignedProjects.includes(p.projectId) &&
-    p.projectId.toLowerCase().includes(projectSearch.toLowerCase())
+    assignedAssetIds.includes(p.asset_id) &&
+    (p.asset_id || "").toLowerCase().includes(projectSearch.toLowerCase())
   );
 
   const handleAssign = async () => {
@@ -92,21 +92,15 @@ const CompanyProjectAccessPage = () => {
     setActionLoading(false);
   };
 
-  const toggleAssign = (pid) =>
-    setSelectedForAssign(prev => prev.includes(pid) ? prev.filter(id => id !== pid) : [...prev, pid]);
+  const toggleAssign = (aid) =>
+    setSelectedForAssign(prev => prev.includes(aid) ? prev.filter(id => id !== aid) : [...prev, aid]);
 
-  const toggleRemove = (pid) =>
-    setSelectedForRemove(prev => prev.includes(pid) ? prev.filter(id => id !== pid) : [...prev, pid]);
-
-  // Stats for selected company
-  const selectedAssignments = allAssignments.filter(
-    a => (a.company || "").toLowerCase() === selectedCompany.toLowerCase()
-  );
+  const toggleRemove = (aid) =>
+    setSelectedForRemove(prev => prev.includes(aid) ? prev.filter(id => id !== aid) : [...prev, aid]);
 
   return (
     <div className="cpap-root">
 
-      {/* Toast */}
       {toast && (
         <div className={`cpap-toast cpap-toast--${toast.type}`}>
           {toast.type === "ok" ? <FiCheck size={14} /> : <FiX size={14} />}
@@ -151,9 +145,7 @@ const CompanyProjectAccessPage = () => {
                     className={`cpap-company-row ${isSelected ? "active" : ""}`}
                     onClick={() => setSelectedCompany(isSelected ? "" : c)}
                   >
-                    <div className="cpap-company-icon">
-                      {c.charAt(0).toUpperCase()}
-                    </div>
+                    <div className="cpap-company-icon">{c.charAt(0).toUpperCase()}</div>
                     <div className="cpap-company-info">
                       <div className="cpap-company-name">{c}</div>
                       <div className="cpap-company-meta">{count} project{count !== 1 ? "s" : ""} assigned</div>
@@ -175,12 +167,11 @@ const CompanyProjectAccessPage = () => {
               </div>
             ) : (
               <>
-                {/* Header */}
                 <div className="cpap-main-hd">
                   <div>
                     <div className="cpap-main-title">{selectedCompany}</div>
                     <div className="cpap-main-sub">
-                      {assignedProjects.length} project{assignedProjects.length !== 1 ? "s" : ""} currently assigned
+                      {assignedAssetIds.length} project{assignedAssetIds.length !== 1 ? "s" : ""} currently assigned
                     </div>
                   </div>
                   <div className="cpap-main-tabs">
@@ -199,19 +190,17 @@ const CompanyProjectAccessPage = () => {
                   </div>
                 </div>
 
-                {/* Currently assigned strip */}
-                {assignedProjects.length > 0 && (
+                {assignedAssetIds.length > 0 && (
                   <div className="cpap-assigned-strip">
                     <span className="cpap-assigned-strip-lbl">Assigned:</span>
-                    {assignedProjects.map(pid => (
-                      <span key={pid} className="cpap-assigned-chip">
-                        <FiGrid size={10} /> {pid}
+                    {assignedAssetIds.map(aid => (
+                      <span key={aid} className="cpap-assigned-chip">
+                        <FiGrid size={10} /> {aid}
                       </span>
                     ))}
                   </div>
                 )}
 
-                {/* Search */}
                 <div className="cpap-proj-search">
                   <FiSearch size={13} className="cpap-search-icon" />
                   <input
@@ -223,7 +212,6 @@ const CompanyProjectAccessPage = () => {
                   />
                 </div>
 
-                {/* Assign tab */}
                 {tab === "assign" && (
                   <>
                     <div className="cpap-proj-grid">
@@ -231,18 +219,18 @@ const CompanyProjectAccessPage = () => {
                         <div className="cpap-empty-state cpap-empty-state--full">
                           All available projects are already assigned to {selectedCompany}.
                         </div>
-                      ) : unassignedProjects.map(proj => {
-                        const checked = selectedForAssign.includes(proj.projectId);
+                      ) : unassignedProjects.map((proj, i) => {
+                        const checked = selectedForAssign.includes(proj.asset_id);
                         return (
                           <label
-                            key={proj.projectId}
+                            key={proj.asset_id ?? i}
                             className={`cpap-proj-card ${checked ? "cpap-proj-card--selected" : ""}`}
                           >
-                            <input type="checkbox" checked={checked} onChange={() => toggleAssign(proj.projectId)} />
+                            <input type="checkbox" checked={checked} onChange={() => toggleAssign(proj.asset_id)} />
                             <div className="cpap-proj-icon"><FiGrid size={15} /></div>
                             <div className="cpap-proj-info">
-                              <div className="cpap-proj-name">{proj.projectId}</div>
-                              {proj.deviceId && <div className="cpap-proj-device">{proj.deviceId}</div>}
+                              <div className="cpap-proj-name">{proj.asset_id}</div>
+                              {proj.client_id && <div className="cpap-proj-device">{proj.client_id}</div>}
                             </div>
                             {checked && <FiCheck size={14} className="cpap-proj-check" />}
                           </label>
@@ -263,7 +251,6 @@ const CompanyProjectAccessPage = () => {
                   </>
                 )}
 
-                {/* Remove tab */}
                 {tab === "remove" && (
                   <>
                     <div className="cpap-proj-grid">
@@ -271,18 +258,18 @@ const CompanyProjectAccessPage = () => {
                         <div className="cpap-empty-state cpap-empty-state--full">
                           No projects assigned to {selectedCompany} yet.
                         </div>
-                      ) : assignedProjectObjs.map(proj => {
-                        const checked = selectedForRemove.includes(proj.projectId);
+                      ) : assignedProjectObjs.map((proj, i) => {
+                        const checked = selectedForRemove.includes(proj.asset_id);
                         return (
                           <label
-                            key={proj.projectId}
+                            key={proj.asset_id ?? i}
                             className={`cpap-proj-card cpap-proj-card--removable ${checked ? "cpap-proj-card--remove-selected" : ""}`}
                           >
-                            <input type="checkbox" checked={checked} onChange={() => toggleRemove(proj.projectId)} />
+                            <input type="checkbox" checked={checked} onChange={() => toggleRemove(proj.asset_id)} />
                             <div className="cpap-proj-icon cpap-proj-icon--danger"><FiGrid size={15} /></div>
                             <div className="cpap-proj-info">
-                              <div className="cpap-proj-name">{proj.projectId}</div>
-                              {proj.deviceId && <div className="cpap-proj-device">{proj.deviceId}</div>}
+                              <div className="cpap-proj-name">{proj.asset_id}</div>
+                              {proj.client_id && <div className="cpap-proj-device">{proj.client_id}</div>}
                             </div>
                             {checked && <FiX size={14} className="cpap-proj-check cpap-proj-check--danger" />}
                           </label>

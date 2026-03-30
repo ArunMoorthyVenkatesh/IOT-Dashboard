@@ -179,6 +179,12 @@ export const toggleStarredProject = (project_id) =>
 
 export const getAllUsers = () => request("/users");
 
+export const deleteUser = (userId) =>
+  request(`/admin/users/${userId}`, { method: "DELETE" });
+
+export const deleteAdmin = (adminId) =>
+  request(`/admin/admins/${adminId}`, { method: "DELETE" });
+
 // ─── Admin ───────────────────────────────────────────────────────────────────
 
 export const getAdminProfile = () => request("/admin/me");
@@ -238,7 +244,7 @@ export const assignUserProjects = ({ email, projectIds }) =>
 export const removeUserProject = ({ email, projectId }) =>
   request("/user-accesses/remove", {
     method: "POST",
-    body: JSON.stringify({ email, projectId: projectId }),  // backend reads as asset_id
+    body: JSON.stringify({ email, projectId }),
   });
 
 export const getCompanyAccesses = () => request("/company-accesses");

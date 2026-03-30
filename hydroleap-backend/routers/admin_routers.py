@@ -27,6 +27,7 @@ pending_admins_table = get_table("PendingAdmins")
 pending_users_table = get_table("PendingUsers")
 approved_users_table = get_table("ApprovedUser")
 projects_table = get_table("Projects")
+ensure_table("CompanyProjectAccess", "company", sort_key="asset_id")
 company_project_access_table = get_table("CompanyProjectAccess")
 ensure_table("PendingProfileUpdates", "request_id")
 pending_profile_updates_table = get_table("PendingProfileUpdates")
@@ -387,6 +388,62 @@ def handle_admin_request(
         return {"message": "Admin rejected and removed from pending list."}
 
 # ---------------------------
+# Delete People
+# ---------------------------
+
+@router.delete("/admin/users/{user_id}")
+def delete_user(user_id: str, Authorization: Optional[str] = Header(None)):
+    token = _require_token(Authorization)
+    payload = decode_jwt(token)
+    caller_email = payload.get("email", "")
+    caller = admins_table.scan(FilterExpression=Attr("email").eq(caller_email)).get("Items", [])
+    if not caller:
+        raise HTTPException(status_code=401, detail="Admin not found.")
+    caller_company = (caller[0].get("company_name") or "").strip().lower()
+    is_super = caller_company == "hydroleap"
+
+    resp = approved_users_table.get_item(Key={"user_id": user_id})
+    user = resp.get("Item")
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    if not is_super:
+        user_company = (user.get("company_name") or user.get("company") or "").strip().lower()
+        if user_company != caller_company:
+            raise HTTPException(status_code=403, detail="You can only remove users from your own company.")
+
+    approved_users_table.delete_item(Key={"user_id": user_id})
+    return {"message": f"User {user_id} deleted."}
+
+
+@router.delete("/admin/admins/{admin_id}")
+def delete_admin(admin_id: str, Authorization: Optional[str] = Header(None)):
+    token = _require_token(Authorization)
+    payload = decode_jwt(token)
+    caller_email = payload.get("email", "")
+    caller = admins_table.scan(FilterExpression=Attr("email").eq(caller_email)).get("Items", [])
+    if not caller:
+        raise HTTPException(status_code=401, detail="Admin not found.")
+    caller_admin = caller[0]
+    caller_company = (caller_admin.get("company_name") or "").strip().lower()
+    is_super = caller_company == "hydroleap"
+
+    if not is_super:
+        raise HTTPException(status_code=403, detail="Only Hydroleap super admins can remove admins.")
+
+    if caller_admin.get("admin_id") == admin_id:
+        raise HTTPException(status_code=400, detail="You cannot delete your own account.")
+
+    resp = admins_table.get_item(Key={"admin_id": admin_id})
+    target = resp.get("Item")
+    if not target:
+        raise HTTPException(status_code=404, detail="Admin not found.")
+
+    admins_table.delete_item(Key={"admin_id": admin_id})
+    return {"message": f"Admin {admin_id} deleted."}
+
+
+# ---------------------------
 # Projects
 # ---------------------------
 
@@ -473,22 +530,25 @@ def assign_projects_to_company(data: dict = Body(...)):
     asset_ids = data.get("projectIds", [])
     if not company:
         raise HTTPException(status_code=400, detail="Missing company")
-    # Remove previous assignments for this company
-    existing = company_project_access_table.query(
-        KeyConditionExpression=Key("company").eq(company)
-    ).get("Items", [])
-    for item in existing:
-        company_project_access_table.delete_item(
-            Key={"company": company, "asset_id": item["asset_id"]}
-        )
-    for aid in asset_ids:
-        company_project_access_table.put_item(
-            Item={
-                "company":          company,
-                "asset_id":         aid,
-                "accessGrantedAt":  datetime.utcnow().isoformat()
-            }
-        )
+    try:
+        # Remove previous assignments for this company
+        existing = company_project_access_table.query(
+            KeyConditionExpression=Key("company").eq(company)
+        ).get("Items", [])
+        for item in existing:
+            company_project_access_table.delete_item(
+                Key={"company": company, "asset_id": item["asset_id"]}
+            )
+        for aid in asset_ids:
+            company_project_access_table.put_item(
+                Item={
+                    "company":          company,
+                    "asset_id":         aid,
+                    "accessGrantedAt":  datetime.utcnow().isoformat()
+                }
+            )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"DynamoDB error: {str(e)}")
     return {"message": "Assignments updated"}
 
 @router.post("/company-accesses/remove")
@@ -514,6 +574,7 @@ def remove_company_project_assignments(data: dict = Body(...)):
 
 # --- User Project Access ---
 
+ensure_table("UserProjectAccess", "email", sort_key="asset_id")
 user_project_access_table = get_table("UserProjectAccess")
 
 @router.get("/user-accesses")
@@ -545,6 +606,14 @@ def remove_user_project_assignment(data: dict = Body(...)):
         Key={"email": email, "asset_id": asset_id}
     )
     if resp.get("ResponseMetadata", {}).get("HTTPStatusCode", 200) == 200:
+        notifications_table.put_item(Item={
+            "notification_id": str(uuid.uuid4()),
+            "user_email":      email,
+            "type":            "project_removed",
+            "message":         f"Your access to project {asset_id} has been removed.",
+            "created_at":      datetime.utcnow().isoformat(),
+            "read":            False,
+        })
         return {"message": f"Assignment removed for {email} - {asset_id}"}
     else:
         raise HTTPException(status_code=500, detail="Failed to remove access.")
@@ -560,21 +629,36 @@ def assign_user_project_access(data: dict = Body(...)):
     if not email or not isinstance(asset_ids, list):
         raise HTTPException(status_code=400, detail="Missing or invalid parameters.")
 
-    # Remove previous assignments for the user
-    existing = user_project_access_table.query(
-        KeyConditionExpression=Key("email").eq(email)
-    ).get("Items", [])
-    for item in existing:
-        user_project_access_table.delete_item(Key={"email": email, "asset_id": item["asset_id"]})
+    try:
+        # Remove previous assignments for the user
+        existing = user_project_access_table.query(
+            KeyConditionExpression=Key("email").eq(email)
+        ).get("Items", [])
+        for item in existing:
+            user_project_access_table.delete_item(Key={"email": email, "asset_id": item["asset_id"]})
 
-    # Add new assignments
-    for aid in asset_ids:
-        user_project_access_table.put_item(
-            Item={
-                "email":           email,
-                "asset_id":        aid,
-                "accessGrantedAt": datetime.utcnow().isoformat()
-            }
-        )
+        # Add new assignments
+        for aid in asset_ids:
+            user_project_access_table.put_item(
+                Item={
+                    "email":           email,
+                    "asset_id":        aid,
+                    "accessGrantedAt": datetime.utcnow().isoformat()
+                }
+            )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"DynamoDB error: {str(e)}")
+
+    if asset_ids:
+        project_list = ", ".join(asset_ids)
+        notifications_table.put_item(Item={
+            "notification_id": str(uuid.uuid4()),
+            "user_email":      email,
+            "type":            "project_assigned",
+            "message":         f"You have been granted access to: {project_list}.",
+            "created_at":      datetime.utcnow().isoformat(),
+            "read":            False,
+        })
+
     return {"message": "User project assignments updated"}
 

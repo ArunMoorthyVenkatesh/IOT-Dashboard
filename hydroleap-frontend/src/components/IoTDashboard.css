@@ -15,8 +15,9 @@
   width: 100%;
 }
 
-.dash-root {
+.iot-dash-root {
   min-height: 100vh;
+  display: block;
   background: #0b1120;
   background-image:
     radial-gradient(ellipse 80% 45% at 50% -10%, rgba(0, 212, 200, 0.07) 0%, transparent 65%),
@@ -985,13 +986,13 @@
 
 /* ── Gauge component overrides (dark context) ────────────────── */
 
-.dash-root .gauge-container {
+.iot-dash-root .gauge-container {
   background: #111827;
   border: 1px solid rgba(255, 255, 255, 0.07);
   width: 100%;
   max-width: 300px;
 }
-.dash-root .gauge-container:hover {
+.iot-dash-root .gauge-container:hover {
   border-color: rgba(0, 212, 200, 0.28);
   box-shadow: 0 0 28px rgba(0, 212, 200, 0.07);
 }

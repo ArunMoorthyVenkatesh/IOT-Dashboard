@@ -37,7 +37,7 @@ const FIELD_LABELS = {
 const NON_NUMERIC = ["Rectifier_1_ON", "Rectifier_2_ON"];
 
 const EXCLUDED     = ["pk", "asset_id", "client_id", "timestamp"];
-const getProjectId = (p) => p?.asset_id || p?.projectId || p?.project_id || p?.id || p;
+const getProjectId = (p) => p?.asset_id || p;
 
 const fmtTime  = (ts) => dayjs(ts).format("DD MMM, h:mm A");
 const fmtDate  = (ts) => dayjs(ts).format("DD MMM YYYY, h:mm:ss A");

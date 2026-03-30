@@ -13,17 +13,17 @@ from conftest import make_token
 
 
 ALL_PROJECTS = [
-    {"projectId": "P1001", "name": "Alpha Plant"},
-    {"projectId": "P1002", "name": "Beta Plant"},
-    {"projectId": "P1003", "name": "Gamma Plant"},
+    {"pk": "PUB_CT#EO009-SG", "asset_id": "EO009-SG", "client_id": "PUB_CT", "data": "{}", "timestamp": "2024-01-01T00:00:00Z"},
+    {"pk": "PUB_CT#EO010-SG", "asset_id": "EO010-SG", "client_id": "PUB_CT", "data": "{}", "timestamp": "2024-01-01T00:01:00Z"},
+    {"pk": "HYDRO#EO001-AU",  "asset_id": "EO001-AU",  "client_id": "HYDRO",  "data": "{}", "timestamp": "2024-01-01T00:02:00Z"},
 ]
 
-HL_ADMIN = {"admin_id": "a1", "email": "admin@hydroleap.com", "company_name": "Hydroleap"}
-CDS_ADMIN = {"admin_id": "a2", "email": "admin@cds.com", "company_name": "CDS Agencies"}
+HL_ADMIN  = {"admin_id": "a1", "email": "admin@hydroleap.com", "company_name": "Hydroleap"}
+CDS_ADMIN = {"admin_id": "a2", "email": "admin@cds.com",       "company_name": "CDS Agencies"}
 
 CDS_ACCESS = [
-    {"company": "CDS Agencies", "projectId": "P1001"},
-    {"company": "CDS Agencies", "projectId": "P1002"},
+    {"company": "CDS Agencies", "asset_id": "EO009-SG"},
+    {"company": "CDS Agencies", "asset_id": "EO010-SG"},
 ]
 
 REGULAR_USER = {
@@ -63,9 +63,9 @@ class TestListProjects:
              patch("routers.admin_routers.company_project_access_table", _tbl(CDS_ACCESS)):
             res = client.get("/api/projects", headers={"Authorization": f"Bearer {token}"})
         assert res.status_code == 200
-        ids = {p["projectId"] for p in res.json()["projects"]}
-        assert ids == {"P1001", "P1002"}
-        assert "P1003" not in ids
+        ids = {p["asset_id"] for p in res.json()["projects"]}
+        assert ids == {"EO009-SG", "EO010-SG"}
+        assert "EO001-AU" not in ids
 
     def test_company_admin_with_no_assignments_gets_empty_list(self, client):
         token = make_token("admin@cds.com", "admin")

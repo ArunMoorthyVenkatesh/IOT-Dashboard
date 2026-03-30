@@ -14,7 +14,7 @@ const CARD_ICONS = [
   <FiBarChart2 size={18} />,
 ];
 
-const AllProjects = () => {
+const AllProjects = ({ onSelectProject }) => {
   const [projects, setProjects] = useState([]);
   const [error, setError] = useState("");
   const [companyName, setCompanyName] = useState("");
@@ -73,7 +73,11 @@ const AllProjects = () => {
   };
 
   const handleClick = (assetId) => {
-    navigate(`/iot/${assetId}`);
+    if (onSelectProject) {
+      onSelectProject(assetId);
+    } else {
+      navigate(`/iot/${assetId}`);
+    }
   };
 
   // Parse sensor data from JSON string

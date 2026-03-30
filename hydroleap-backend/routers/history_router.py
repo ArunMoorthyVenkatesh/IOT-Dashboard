@@ -24,13 +24,15 @@ try:
 except Exception as e:
     print("Could not fetch AWS identity:", e)
 
-DYNAMODB_REGION = os.environ.get("AWS_REGION", "us-east-1")
-PROJECTS_TABLE = "Projects"
-HISTORY_TABLE  = "ProjectHistory"
+DYNAMODB_REGION  = os.environ.get("AWS_REGION", "us-east-1")
+PROJECTS_TABLE   = "Projects"
+HISTORY_TABLE    = "ProjectHistory"
+SENSOR_HIST_TABLE = "SensorHistory"
 
-dynamodb       = boto3.resource("dynamodb", region_name=DYNAMODB_REGION)
-projects_table = dynamodb.Table(PROJECTS_TABLE)
-history_table  = dynamodb.Table(HISTORY_TABLE)
+dynamodb            = boto3.resource("dynamodb", region_name=DYNAMODB_REGION)
+projects_table      = dynamodb.Table(PROJECTS_TABLE)
+history_table       = dynamodb.Table(HISTORY_TABLE)
+sensor_history_table = dynamodb.Table(SENSOR_HIST_TABLE)
 
 
 def convert_floats_to_decimal(obj):
@@ -124,9 +126,56 @@ def get_history(asset_id: str):
 
 @router.get("/cloudwatch/logs")
 def get_all_logs(
-    limit: int = Query(100, gt=0, le=10000),
+    limit: int = Query(200, gt=0, le=10000),
     asset_id: Optional[str] = Query(None)
 ):
+    """
+    Returns sensor history events for the Audit Trail and Audit Graphs tabs.
+    Reads from the SensorHistory DynamoDB table (seeded via seed_sensor_history.py).
+    Falls back to CloudWatch if the table is empty or unavailable.
+    """
+    try:
+        if asset_id:
+            resp = sensor_history_table.query(
+                KeyConditionExpression=boto3.dynamodb.conditions.Key("asset_id").eq(asset_id),
+                ScanIndexForward=True,
+                Limit=limit,
+            )
+        else:
+            resp = sensor_history_table.scan(Limit=limit)
+
+        items = resp.get("Items", [])
+
+        if items:
+            events = []
+            for item in items:
+                try:
+                    old_image = json.loads(item.get("old_image", "{}"))
+                    new_image = json.loads(item.get("new_image", "{}"))
+                except (json.JSONDecodeError, TypeError):
+                    old_image = {}
+                    new_image = {}
+
+                events.append({
+                    "stream":    item.get("asset_id", ""),
+                    "timestamp": item.get("timestamp", ""),
+                    "data": {
+                        "eventName": item.get("event_name", "MODIFY"),
+                        "oldImage":  old_image,
+                        "newImage":  new_image,
+                    }
+                })
+
+            return {
+                "source":        "SensorHistory",
+                "filteredCount": len(events),
+                "events":        events,
+            }
+
+    except Exception as db_err:
+        print(f"[cloudwatch/logs] SensorHistory read failed: {db_err}. Falling back to CloudWatch.")
+
+    # ── CloudWatch fallback ────────────────────────────────────────────────────
     log_group = "/aws/lambda/changestreamerlogger"
     try:
         logs_client = boto3.client(
@@ -135,26 +184,24 @@ def get_all_logs(
             aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
             aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
         )
-
         streams_response = logs_client.describe_log_streams(
             logGroupName=log_group,
             orderBy="LastEventTime",
             descending=True,
-            limit=50
+            limit=50,
         )
-        streams = streams_response["logStreams"]
+        streams = streams_response.get("logStreams", [])
         if not streams:
-            return {"error": "No log streams found."}
+            return {"source": "cloudwatch", "filteredCount": 0, "events": []}
 
         all_filtered = []
-
         for s in streams:
             stream_name = s["logStreamName"]
             events_response = logs_client.get_log_events(
                 logGroupName=log_group,
                 logStreamName=stream_name,
                 startFromHead=True,
-                limit=limit
+                limit=limit,
             )
             for e in events_response.get("events", []):
                 try:
@@ -164,16 +211,17 @@ def get_all_logs(
                         all_filtered.append({
                             "stream":    stream_name,
                             "timestamp": e["timestamp"],
-                            "data":      parsed
+                            "data":      parsed,
                         })
                 except json.JSONDecodeError:
                     continue
 
         return {
+            "source":        "cloudwatch",
             "logGroup":      log_group,
             "filteredCount": len(all_filtered),
-            "events":        all_filtered
+            "events":        all_filtered,
         }
 
     except Exception as e:
-        return {"error": str(e)}
+        return {"source": "none", "error": str(e), "events": []}

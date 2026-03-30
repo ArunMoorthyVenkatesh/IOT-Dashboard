@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { getAllAdmins } from "../services/api";
+import { FiTrash2, FiAlertTriangle, FiX, FiCheck } from "react-icons/fi";
+import { getAllAdmins, deleteAdmin } from "../services/api";
 import "./MemberList.css";
 
 export default function AdminListSection() {
@@ -9,6 +10,8 @@ export default function AdminListSection() {
   const [search,       setSearch]       = useState("");
   const [companyFilter,setCompanyFilter]= useState("");
   const [companyName,  setCompanyName]  = useState("");
+  const [confirmId,    setConfirmId]    = useState(null);
+  const [deleting,     setDeleting]     = useState(false);
 
   useEffect(() => {
     try {
@@ -28,6 +31,18 @@ export default function AdminListSection() {
       setError(err?.message || "Failed to fetch admin list.");
     }
     setLoading(false);
+  };
+
+  const handleDelete = async (adminId) => {
+    setDeleting(true);
+    try {
+      await deleteAdmin(adminId);
+      setAdmins(prev => prev.filter(a => a.admin_id !== adminId));
+    } catch (err) {
+      setError(err?.message || "Failed to delete admin.");
+    }
+    setDeleting(false);
+    setConfirmId(null);
   };
 
   const filteredAdmins = admins.filter(a => {
@@ -54,8 +69,8 @@ export default function AdminListSection() {
       )}
 
       <div className="member-list-grid">
-        {filteredAdmins.map((a, idx) => (
-          <div key={idx} className="member-card">
+        {filteredAdmins.map((a) => (
+          <div key={a.admin_id} className="member-card">
             <h3>{a.name || "—"}</h3>
             <p><b>Email:</b> {a.email || "—"}</p>
             {a.phone && <p><b>Phone:</b> {a.phone}</p>}
@@ -64,6 +79,34 @@ export default function AdminListSection() {
             {a.company_name && <p className="member-company"><b>Company:</b> {a.company_name}</p>}
             {a.created_at && (
               <p className="member-joined"><b>Joined:</b> {new Date(a.created_at).toLocaleString()}</p>
+            )}
+
+            {confirmId === a.admin_id ? (
+              <div className="member-confirm-row">
+                <FiAlertTriangle size={13} className="member-confirm-icon" />
+                <span className="member-confirm-text">Remove this admin?</span>
+                <button
+                  className="member-btn-confirm"
+                  onClick={() => handleDelete(a.admin_id)}
+                  disabled={deleting}
+                >
+                  <FiCheck size={13} /> {deleting ? "…" : "Yes"}
+                </button>
+                <button
+                  className="member-btn-cancel"
+                  onClick={() => setConfirmId(null)}
+                  disabled={deleting}
+                >
+                  <FiX size={13} />
+                </button>
+              </div>
+            ) : (
+              <button
+                className="member-btn-delete"
+                onClick={() => setConfirmId(a.admin_id)}
+              >
+                <FiTrash2 size={13} /> Remove
+              </button>
             )}
           </div>
         ))}

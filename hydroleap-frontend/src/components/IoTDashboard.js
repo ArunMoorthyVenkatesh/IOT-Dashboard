@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   AreaChart, Area,
@@ -250,7 +250,7 @@ const HeaderBar = ({ onRefresh }) => {
 
 // ── Project Info Bar ──────────────────────────────────────────────────────────
 
-const ProjectInfoBar = ({ projectId, deviceId, clientId, lastUpdated }) => (
+const ProjectInfoBar = ({ projectId, clientId, lastUpdated, refreshing }) => (
   <div className="project-bar">
     <div className="project-bar-left">
       <span className="project-bar-label">Asset</span>
@@ -266,7 +266,7 @@ const ProjectInfoBar = ({ projectId, deviceId, clientId, lastUpdated }) => (
     <div className="project-bar-right">
       {lastUpdated && (
         <span className="project-last-updated">
-          Updated {fmtShort(lastUpdated)}
+          {refreshing ? "Refreshing…" : `Updated ${fmtShort(lastUpdated)}`}
         </span>
       )}
       <span className="live-badge">
@@ -508,13 +508,17 @@ const IoTDashboard = ({ projectId: propProjectId, embedded = false }) => {
   const [data, setData]               = useState({});
   const [clientId, setClientId]       = useState("");
   const [loading, setLoading]         = useState(true);
+  const [refreshing, setRefreshing]   = useState(false);
   const [error, setError]             = useState("");
   const [auditLogs, setAuditLogs]     = useState([]);
   const [activeTab, setActiveTab]     = useState("realtime");
   const [subView, setSubView]         = useState("numeric");
   const [lastUpdated, setLastUpdated] = useState(null);
+  const mountedRef = useRef(true);
 
-  const fetchProject = useCallback(async () => {
+  const fetchProject = useCallback(async (silent = false) => {
+    if (!mountedRef.current) return;
+    if (silent) setRefreshing(true);
     try {
       const res = await getAllProjects();
       let projects = res.projects || res || [];
@@ -522,6 +526,7 @@ const IoTDashboard = ({ projectId: propProjectId, embedded = false }) => {
       const project = projects.find(p =>
         p.asset_id === projectId || p.pk?.endsWith(`#${projectId}`)
       );
+      if (!mountedRef.current) return;
       if (!project) {
         setError("Project not found. It may have been removed or you don\u2019t have access.");
         setClientId(""); setData({});
@@ -540,18 +545,18 @@ const IoTDashboard = ({ projectId: propProjectId, embedded = false }) => {
       setLastUpdated(project.timestamp || new Date().toISOString());
       setError("");
     } catch (err) {
-      setError(err.message || "Failed to load project data.");
+      if (mountedRef.current) setError(err.message || "Failed to load project data.");
     } finally {
-      setLoading(false);
+      if (mountedRef.current) { setLoading(false); setRefreshing(false); }
     }
   }, [projectId]);
 
   useEffect(() => {
-    let mounted = true;
+    mountedRef.current = true;
     setLoading(true);
-    fetchProject();
-    const interval = setInterval(() => { if (mounted) fetchProject(); }, 5000);
-    return () => { mounted = false; clearInterval(interval); };
+    fetchProject(false);
+    const interval = setInterval(() => fetchProject(true), 5000);
+    return () => { mountedRef.current = false; clearInterval(interval); };
   }, [fetchProject]);
 
   useEffect(() => {
@@ -572,11 +577,11 @@ const IoTDashboard = ({ projectId: propProjectId, embedded = false }) => {
   }, [projectId]);
 
   return (
-    <div className={embedded ? "iot-embedded-root" : "dash-root"}>
+    <div className={embedded ? "iot-embedded-root" : "iot-dash-root"}>
       {!embedded && (
         <HeaderBar onRefresh={() => embedded ? fetchProject() : navigate(0)} />
       )}
-      <ProjectInfoBar projectId={projectId} clientId={clientId} lastUpdated={lastUpdated} />
+      <ProjectInfoBar projectId={projectId} clientId={clientId} lastUpdated={lastUpdated} refreshing={refreshing} />
 
       {/* ── Tab Navigation ── */}
       <nav className="dash-tabs" aria-label="Dashboard sections">

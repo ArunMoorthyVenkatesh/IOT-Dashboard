@@ -60,7 +60,7 @@ const CARD_ICONS  = [
   <FiBarChart2 size={20} />,
 ];
 
-const getProjectId = (p) => p?.asset_id || p?.projectId || p?.project_id || p?.id || p;
+const getProjectId = (p) => p?.asset_id || p;
 
 // ── Activity tracking (sessionStorage) ────────────────────────────────────────
 
@@ -335,7 +335,11 @@ const UserProjectsSection = ({ onSelectProject, starred = [], onToggleStar }) =>
     }
   }, []);
 
-  useEffect(() => { fetchProjects(); }, [fetchProjects]);
+  useEffect(() => {
+    fetchProjects();
+    const interval = setInterval(fetchProjects, 30000);
+    return () => clearInterval(interval);
+  }, [fetchProjects]);
 
   if (loading) return (
     <div className="db-loading" role="status" aria-label="Loading projects…">
@@ -1307,8 +1311,20 @@ const AdminHome = ({ isHydroleap, pendingCounts, totalCounts, onNavigate }) => {
             </div>
             <div className="adm-hero-metric-divider" />
             <div className="adm-hero-metric">
+              <span className="adm-hero-metric-value">{totalCounts.admins}</span>
+              <span className="adm-hero-metric-label">Admins</span>
+            </div>
+            {isHydroleap && <>
+              <div className="adm-hero-metric-divider" />
+              <div className="adm-hero-metric">
+                <span className="adm-hero-metric-value">{totalCounts.superAdmins}</span>
+                <span className="adm-hero-metric-label">Super Admins</span>
+              </div>
+            </>}
+            <div className="adm-hero-metric-divider" />
+            <div className="adm-hero-metric">
               <span className="adm-hero-metric-value">{totalCounts.projects}</span>
-              <span className="adm-hero-metric-label">Projects</span>
+              <span className="adm-hero-metric-label">{isHydroleap ? "Projects" : "Projects (Company)"}</span>
             </div>
           </div>
         </div>
@@ -1351,11 +1367,12 @@ const AdminHome = ({ isHydroleap, pendingCounts, totalCounts, onNavigate }) => {
       <div className="adm-section-row">
         <div className="adm-section-label">Directory</div>
       </div>
-      <div className="adm-stat-grid adm-stat-grid--3">
+      <div className={`adm-stat-grid${isHydroleap ? "" : " adm-stat-grid--3"}`}>
         {[
-          { icon: <FiUsers size={22} />, label: "Registered Users",  value: totalCounts.users,    color: "green",  nav: ["people-directory","users"]  },
-          { icon: <FiUser  size={22} />, label: "Registered Admins", value: totalCounts.admins,   color: "indigo", nav: ["people-directory","admins"] },
-          { icon: <FiGrid  size={22} />, label: "Total Projects",    value: totalCounts.projects, color: "cyan",   nav: ["projects"]                  },
+          { icon: <FiUsers  size={22} />, label: "Registered Users",  value: totalCounts.users,       color: "green",  nav: ["people-directory","users"]  },
+          { icon: <FiUser   size={22} />, label: "Registered Admins", value: totalCounts.admins,      color: "indigo", nav: ["people-directory","admins"] },
+          ...(isHydroleap ? [{ icon: <FiShield size={22} />, label: "Super Admins", value: totalCounts.superAdmins, color: "purple", nav: ["people-directory","admins"] }] : []),
+          { icon: <FiGrid   size={22} />, label: "Total Projects",    value: totalCounts.projects,    color: "cyan",   nav: ["projects"]                  },
         ].map(({ icon, label, value, color, nav }) => (
           <div
             key={label}
@@ -1750,7 +1767,7 @@ const UserProjectAccessPage = () => {
     if (!selectedEmail) { setAssignedProjects([]); setSelectedToAssign([]); return; }
     setLoading(true);
     getUserAccesses(selectedEmail)
-      .then(res => { setAssignedProjects((res.user_accesses || []).map(a => a.asset_id)); setSelectedToAssign([]); setLoading(false); })
+      .then(res => { setAssignedProjects((res.user_accesses || []).map(a => a.asset_id).filter(Boolean)); setSelectedToAssign([]); setLoading(false); })
       .catch(() => { setAssignedProjects([]); setLoading(false); });
   }, [selectedEmail]);
 
@@ -1976,7 +1993,7 @@ export default function Dashboard() {
   const [active,           setActive]           = useState(() => sessionStorage.getItem("hl_active") || (role === "admin" ? "home" : "dashboard"));
   const [notifOpen,        setNotifOpen]        = useState(false);
   const [pendingCounts,    setPendingCounts]    = useState({ users: 0, admins: 0, profiles: 0 });
-  const [totalCounts,      setTotalCounts]      = useState({ users: 0, admins: 0, projects: 0 });
+  const [totalCounts,      setTotalCounts]      = useState({ users: 0, admins: 0, superAdmins: 0, projects: 0 });
   const [seenCounts,       setSeenCounts]       = useState(() => {
     try { return JSON.parse(localStorage.getItem("hl_notif_seen") || "{}"); }
     catch { return {}; }
@@ -2036,30 +2053,36 @@ export default function Dashboard() {
     if (role !== "admin") return;
     const fetchCounts = async () => {
       try {
-        const [u, a, p, allU, allA, companyAccess] = await Promise.all([
+        const [u, a, p, allU, allA, companyAccess, projRes] = await Promise.all([
           getPendingUsers(),
           getPendingAdmins(),
           getPendingProfileUpdates(),
           getAllUsers(),
           getAllAdmins(),
           getCompanyAccesses(),
+          getAllProjects(),
         ]);
         const storedProfile = JSON.parse(localStorage.getItem("profile") || "{}");
         const myCompany = (storedProfile.company_name || storedProfile.company || "").trim().toLowerCase();
         const isSuper = myCompany === "hydroleap";
         const allAccesses = companyAccess?.company_accesses || [];
         const projectCount = isSuper
-          ? allAccesses.length
+          ? (projRes?.projects || []).length
           : allAccesses.filter(ca => (ca.company || "").trim().toLowerCase() === myCompany).length;
         setPendingCounts({
           users:    (u  || []).length,
           admins:   (a  || []).length,
           profiles: (p  || []).length,
         });
+        const allAdminsList = allA?.admins || allA || [];
+        const superAdminCount = allAdminsList.filter(a =>
+          (a.company_name || a.company || a.companyName || "").trim().toLowerCase() === "hydroleap"
+        ).length;
         setTotalCounts({
-          users:    (allU?.users  || allU  || []).length,
-          admins:   (allA?.admins || allA  || []).length,
-          projects: projectCount,
+          users:       (allU?.users || allU || []).length,
+          admins:      allAdminsList.length,
+          superAdmins: superAdminCount,
+          projects:    projectCount,
         });
       } catch {}
     };
@@ -2230,7 +2253,7 @@ export default function Dashboard() {
 
   // Top-bar title logic
   const topbarTitle = (() => {
-    if (!isAdmin && active === "projects" && selectedProject) return selectedProject;
+    if (active === "projects" && selectedProject) return selectedProject;
     const found = NAV_ITEMS.find(n => n.key === active);
     return found?.label || "Dashboard";
   })();
@@ -2394,7 +2417,7 @@ export default function Dashboard() {
             </button>
 
             {/* Back button when viewing IoT inline */}
-            {!isAdmin && active === "projects" && selectedProject && (
+            {active === "projects" && selectedProject && (
               <button className="db-back-btn" onClick={handleBackFromIoT} aria-label="Back to projects">
                 <FiArrowLeft size={15} /> Projects
               </button>
@@ -2500,7 +2523,7 @@ export default function Dashboard() {
         </div>
 
         {/* Content */}
-        <div className={`dash-content${!isAdmin && active === "projects" && selectedProject ? " dash-content--iot" : ""}`}>
+        <div className={`dash-content${active === "projects" && selectedProject ? " dash-content--iot" : ""}`}>
 
           {/* ── USER SECTIONS ── */}
           {!isAdmin && active === "dashboard" && (
@@ -2701,7 +2724,16 @@ export default function Dashboard() {
                 </>
               )}
 
-              {active === "projects" && <AllProjects />}
+              {active === "projects" && !selectedProject && (
+                <AllProjects onSelectProject={handleSelectProject} />
+              )}
+              {active === "projects" && selectedProject && (
+                <IoTDashboard
+                  projectId={selectedProject}
+                  embedded={true}
+                  onBack={handleBackFromIoT}
+                />
+              )}
 
               {active === "project-access" && <UserProjectAccessPage />}
 
