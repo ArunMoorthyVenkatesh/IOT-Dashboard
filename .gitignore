@@ -23,6 +23,16 @@ dist/
 .vscode/
 .idea/
 
+# Environment / secrets — never commit credentials
+.env
+.env.local
+.env.production
+.env.*.local
+hydroleap-backend/.env
+hydroleap-frontend/.env
+hydroleap-frontend/.env.production
+hydroleap-frontend/.env.local
+
 # Claude AI config
 .claude/
 artifacts-builder.skill
