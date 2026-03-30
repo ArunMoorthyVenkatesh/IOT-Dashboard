@@ -9,12 +9,19 @@ from routers import admin_routers, user_router, history_router, password_router
 
 app = FastAPI(title="Hydroleap API", version="1.0.0")
 
+import os
+
 origins = [
     "http://localhost:3000",
     "http://localhost:4000",
     "https://iot-hydroleap.com",
     "http://iot-hydroleap-bucket.s3-website-us-east-1.amazonaws.com",
 ]
+
+# Allow extra origin from env (e.g. Netlify/Vercel URL set at deploy time)
+_extra_origin = os.environ.get("FRONTEND_URL", "").strip().rstrip("/")
+if _extra_origin and _extra_origin not in origins:
+    origins.append(_extra_origin)
 
 app.add_middleware(
     CORSMiddleware,
