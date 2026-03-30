@@ -21,10 +21,9 @@ import {
   FiBell, FiUserPlus, FiShield, FiAlertCircle, FiTrendingUp,
   FiSearch, FiPlus,
 } from "react-icons/fi";
-import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import {
-  getUserAccesses, getAllProjects, getCloudWatchLogs,
+  getUserAccesses, getAllProjects,
   getStarredProjects, toggleStarredProject, requestProfileUpdate,
   getPendingUsers, getPendingAdmins, getPendingProfileUpdates,
   getAllUsers, getAllAdmins,
@@ -146,7 +145,6 @@ const UserOverviewSection = ({ onSelectProject, onNavigateToProjects, starred = 
   }, [profile.email]);
 
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
-  const starredProjects = projects.filter(p => starred.includes(getProjectId(p)));
   const recentProjects  = recentPids.map(pid => projects.find(p => getProjectId(p) === pid)).filter(Boolean);
   const reportHistory   = (() => {
     try {
@@ -1464,31 +1462,6 @@ const NotificationPanel = ({ counts, seenCounts, onNavigate, onClose }) => {
 };
 
 // ── Admin Profile Section ─────────────────────────────────────────────────────
-
-const ADMIN_API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:8000/api";
-
-function AdminProfileRow({ label, value }) {
-  return (
-    <div className="admin-prof-row">
-      <div className="admin-prof-label">{label}</div>
-      <div className="admin-prof-value">{value || "—"}</div>
-    </div>
-  );
-}
-
-function AdminProfileEditRow({ label, value, onChange, type = "text" }) {
-  return (
-    <div className="admin-prof-row">
-      <div className="admin-prof-label">{label}</div>
-      <input
-        className="admin-prof-input"
-        type={type}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-      />
-    </div>
-  );
-}
 
 function AdminProfileSection() {
   const [profile,   setProfile]   = useState(null);

@@ -56,3 +56,7 @@ app.include_router(password_router.router, prefix="/api/auth", tags=["auth"])
 @app.get("/")
 def root():
     return {"status": "ok"}
+
+# Lambda handler (used by AWS Lambda + API Gateway)
+from mangum import Mangum
+handler = Mangum(app, lifespan="off")

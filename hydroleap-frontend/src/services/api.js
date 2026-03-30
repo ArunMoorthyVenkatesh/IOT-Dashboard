@@ -58,7 +58,7 @@ async function request(path, options = {}) {
   try {
     res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
   } catch (networkErr) {
-    throw { message: "Network error — check your connection.", status: 0 };
+    throw Object.assign(new Error("Network error — check your connection."), { status: 0 });
   }
 
   if (res.ok) {
@@ -84,7 +84,7 @@ async function request(path, options = {}) {
     window.location.href = "/login";
   }
 
-  throw { message, status: res.status };
+  throw Object.assign(new Error(message), { status: res.status });
 }
 
 // ─── Auth & OTP ─────────────────────────────────────────────────────────────
