@@ -54,13 +54,13 @@ const AllProjects = () => {
             (a.company || a.companyName || a.company_name || "").trim().toLowerCase() ===
             company.trim().toLowerCase()
         );
-        const allowedProjectIds = allowed.map((a) => a.projectId);
-        if (allowedProjectIds.length === 0) {
+        const allowedAssetIds = allowed.map((a) => a.asset_id);
+        if (allowedAssetIds.length === 0) {
           setProjects([]);
         } else {
           const projRes = await getAllProjects();
           const allProjects = projRes.projects || [];
-          setProjects(allProjects.filter((p) => allowedProjectIds.includes(p.projectId)));
+          setProjects(allProjects.filter((p) => allowedAssetIds.includes(p.asset_id)));
         }
       } else {
         setProjects([]);
@@ -72,8 +72,15 @@ const AllProjects = () => {
     }
   };
 
-  const handleClick = (projectId) => {
-    navigate(`/iot/${projectId}`);
+  const handleClick = (assetId) => {
+    navigate(`/iot/${assetId}`);
+  };
+
+  // Parse sensor data from JSON string
+  const getSensorData = (proj) => {
+    try {
+      return typeof proj.data === "string" ? JSON.parse(proj.data) : (proj.data || {});
+    } catch { return {}; }
   };
 
   return (
@@ -117,28 +124,26 @@ const AllProjects = () => {
           {projects.map((proj, idx) => {
             const colorClass = CARD_COLORS[idx % CARD_COLORS.length];
             const icon = CARD_ICONS[idx % CARD_ICONS.length];
+            const sensor = getSensorData(proj);
+            const isRunning = sensor.Rectifier_1_ON || sensor.Rectifier_2_ON || sensor.Pump_speed > 0;
             return (
               <div
-                key={proj.projectId}
+                key={proj.asset_id}
                 className={`project-card ${colorClass}`}
-                onClick={() => handleClick(proj.projectId)}
+                onClick={() => handleClick(proj.asset_id)}
                 tabIndex={0}
-                onKeyDown={(e) => e.key === "Enter" && handleClick(proj.projectId)}
+                onKeyDown={(e) => e.key === "Enter" && handleClick(proj.asset_id)}
               >
                 <div className="project-card-bar" />
                 <div className="project-card-inner">
                   <div className="project-card-icon">{icon}</div>
-                  <div className="project-card-name">{proj.projectId}</div>
+                  <div className="project-card-name">{proj.asset_id}</div>
                   <div className="project-card-device">
-                    <strong>Device:</strong> {proj.deviceId || "N/A"}
+                    <strong>Client:</strong> {proj.client_id || "N/A"}
                   </div>
                   <div className="project-card-footer">
-                    <span
-                      className={`status-badge ${
-                        proj.system_running ? "status-running" : "status-stopped"
-                      }`}
-                    >
-                      {proj.system_running ? "Running" : "Stopped"}
+                    <span className={`status-badge ${isRunning ? "status-running" : "status-stopped"}`}>
+                      {isRunning ? "Running" : "Stopped"}
                     </span>
                     <span className="project-card-open">
                       Open <FiArrowRight size={11} />

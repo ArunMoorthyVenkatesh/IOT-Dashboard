@@ -238,7 +238,7 @@ export const assignUserProjects = ({ email, projectIds }) =>
 export const removeUserProject = ({ email, projectId }) =>
   request("/user-accesses/remove", {
     method: "POST",
-    body: JSON.stringify({ email, projectId }),
+    body: JSON.stringify({ email, projectId: projectId }),  // backend reads as asset_id
   });
 
 export const getCompanyAccesses = () => request("/company-accesses");
@@ -259,8 +259,8 @@ export const getCompanies = () => request("/companies");
 
 // ─── History & CloudWatch ────────────────────────────────────────────────────
 
-export const getCloudWatchLogs = (projectId) =>
-  request(`/history/cloudwatch/logs?project_id=${encodeURIComponent(projectId)}`);
+export const getCloudWatchLogs = (assetId) =>
+  request(`/history/cloudwatch/logs?asset_id=${encodeURIComponent(assetId)}`);
 
-export const getProjectHistory = (projectId) =>
-  request(`/history/${encodeURIComponent(projectId)}`);
+export const getProjectHistory = (assetId) =>
+  request(`/history/${encodeURIComponent(assetId)}`);

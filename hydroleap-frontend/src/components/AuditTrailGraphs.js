@@ -11,7 +11,7 @@ import "./AuditTrailGraphs.css";
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
 
-const EXCLUDED_KEYS = ["projectId", "project_id", "deviceId", "device_id", "timestamp", "system_running", "Rectifier_01", "Pump_01"];
+const EXCLUDED_KEYS = ["pk", "asset_id", "client_id", "timestamp", "Rectifier_1_ON", "Rectifier_2_ON"];
 
 function extractVariables(auditLogs) {
   const vars = new Set();
@@ -43,7 +43,7 @@ const AuditTrailGraphs = ({ projectId }) => {
       setLoading(true);
       try {
         const res = await axios.get(
-          `http://localhost:8888/api/history/cloudwatch/logs?project_id=${projectId}`
+          `${process.env.REACT_APP_API_BASE || "http://localhost:8000/api"}/history/cloudwatch/logs?asset_id=${projectId}`
         );
         const events = res.data.events || [];
         const parsed = events.map(e => ({ timestamp: e.timestamp, newImage: e.data?.newImage || {} }));

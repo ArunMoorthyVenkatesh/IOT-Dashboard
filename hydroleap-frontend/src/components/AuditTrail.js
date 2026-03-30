@@ -68,7 +68,7 @@ const AuditTrailPage = ({ projectId }) => {
     const fetchLogs = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:8888/api/history/cloudwatch/logs?project_id=${projectId}`
+          `${process.env.REACT_APP_API_BASE || "http://localhost:8000/api"}/history/cloudwatch/logs?asset_id=${projectId}`
         );
         const events = res.data.events || [];
         const parsed = events.map((e) => ({

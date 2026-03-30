@@ -23,18 +23,44 @@ dynamodb = boto3.resource(
 )
 
 PROJECTS_TABLE = "Projects"
-table = dynamodb.Table(PROJECTS_TABLE)
+client = dynamodb.meta.client
 
 
-def clear_table():
-    """Delete all existing items from the Projects table."""
-    print(f"Clearing {PROJECTS_TABLE}...")
-    scan = table.scan()
-    items = scan.get("Items", [])
-    with table.batch_writer() as batch:
-        for item in items:
-            batch.delete_item(Key={"pk": item["pk"]})
-    print(f"  Deleted {len(items)} items.")
+def recreate_table():
+    """Drop and recreate Projects table with pk as the partition key."""
+    print(f"Checking {PROJECTS_TABLE} table schema...")
+    try:
+        desc = client.describe_table(TableName=PROJECTS_TABLE)
+        keys = desc["Table"]["KeySchema"]
+        current_key = keys[0]["AttributeName"]
+        if current_key == "pk":
+            print("  Table already has correct key (pk). Clearing items...")
+            tbl = dynamodb.Table(PROJECTS_TABLE)
+            scan = tbl.scan()
+            with tbl.batch_writer() as batch:
+                for item in scan.get("Items", []):
+                    batch.delete_item(Key={"pk": item["pk"]})
+            print(f"  Cleared {len(scan.get('Items', []))} items.")
+            return tbl
+        else:
+            print(f"  Table has key '{current_key}' — deleting and recreating with 'pk'...")
+            client.delete_table(TableName=PROJECTS_TABLE)
+            waiter = client.get_waiter("table_not_exists")
+            waiter.wait(TableName=PROJECTS_TABLE)
+            print("  Old table deleted.")
+    except client.exceptions.ResourceNotFoundException:
+        print("  Table does not exist yet, creating...")
+
+    client.create_table(
+        TableName=PROJECTS_TABLE,
+        KeySchema=[{"AttributeName": "pk", "KeyType": "HASH"}],
+        AttributeDefinitions=[{"AttributeName": "pk", "AttributeType": "S"}],
+        BillingMode="PAY_PER_REQUEST",
+    )
+    waiter = client.get_waiter("table_exists")
+    waiter.wait(TableName=PROJECTS_TABLE)
+    print(f"  Created table '{PROJECTS_TABLE}' with partition key 'pk'.")
+    return dynamodb.Table(PROJECTS_TABLE)
 
 
 def ts(minutes_ago=0):
@@ -169,7 +195,7 @@ MOCK_DEVICES = [
 ]
 
 
-def seed():
+def seed(table):
     print("Seeding mock data...")
     for device in MOCK_DEVICES:
         client_id = device["client_id"]
@@ -188,5 +214,5 @@ def seed():
 
 
 if __name__ == "__main__":
-    clear_table()
-    seed()
+    tbl = recreate_table()
+    seed(tbl)

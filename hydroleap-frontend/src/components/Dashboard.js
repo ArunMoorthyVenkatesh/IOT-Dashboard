@@ -60,7 +60,7 @@ const CARD_ICONS  = [
   <FiBarChart2 size={20} />,
 ];
 
-const getProjectId = (p) => p?.projectId || p?.project_id || p?.id || p;
+const getProjectId = (p) => p?.asset_id || p?.projectId || p?.project_id || p?.id || p;
 
 // ── Activity tracking (sessionStorage) ────────────────────────────────────────
 
@@ -1735,10 +1735,10 @@ const UserProjectAccessPage = () => {
           usersRaw = usersRaw.filter(u =>
             (u.company_name || "").trim().toLowerCase() === companyName.trim().toLowerCase()
           );
-          const accessibleProjectIds = companyAccessList
+          const accessibleAssetIds = companyAccessList
             .filter(ca => (ca.company || "").trim().toLowerCase() === companyName.trim().toLowerCase())
-            .map(ca => ca.projectId);
-          projectsRaw = projectsRaw.filter(p => accessibleProjectIds.includes(p.projectId));
+            .map(ca => ca.asset_id);
+          projectsRaw = projectsRaw.filter(p => accessibleAssetIds.includes(p.asset_id));
         }
         setUsers(usersRaw.map(u => u.email).filter(Boolean));
         setProjects(projectsRaw);
@@ -1750,7 +1750,7 @@ const UserProjectAccessPage = () => {
     if (!selectedEmail) { setAssignedProjects([]); setSelectedToAssign([]); return; }
     setLoading(true);
     getUserAccesses(selectedEmail)
-      .then(res => { setAssignedProjects((res.user_accesses || []).map(a => a.projectId)); setSelectedToAssign([]); setLoading(false); })
+      .then(res => { setAssignedProjects((res.user_accesses || []).map(a => a.asset_id)); setSelectedToAssign([]); setLoading(false); })
       .catch(() => { setAssignedProjects([]); setLoading(false); });
   }, [selectedEmail]);
 
@@ -1762,7 +1762,7 @@ const UserProjectAccessPage = () => {
       setMessage(`Projects assigned to ${selectedEmail}`);
       setSelectedToAssign([]);
       const res = await getUserAccesses(selectedEmail);
-      setAssignedProjects((res.user_accesses || []).map(a => a.projectId));
+      setAssignedProjects((res.user_accesses || []).map(a => a.asset_id));
     } catch (err) { setMessage(err.message || "Failed to assign projects."); }
     setAssigning(false);
   };
@@ -1780,8 +1780,8 @@ const UserProjectAccessPage = () => {
   };
 
   const filteredUsers = users.filter(e => e.toLowerCase().includes(searchUser.toLowerCase()));
-  const filteredProjects = projects.filter(p => (p.projectId || "").toLowerCase().includes(searchProject.toLowerCase()));
-  const assignableProjects = filteredProjects.filter(p => !assignedProjects.includes(p.projectId));
+  const filteredProjects = projects.filter(p => (p.asset_id || "").toLowerCase().includes(searchProject.toLowerCase()));
+  const assignableProjects = filteredProjects.filter(p => !assignedProjects.includes(p.asset_id));
 
   const selectedUserInitials = selectedEmail
     ? selectedEmail.split("@")[0].slice(0, 2).toUpperCase()
@@ -1917,10 +1917,10 @@ const UserProjectAccessPage = () => {
                 {assignableProjects.length === 0 ? (
                   <div className="upac-empty">All projects already assigned</div>
                 ) : assignableProjects.map(p => {
-                  const checked = selectedToAssign.includes(p.projectId);
+                  const checked = selectedToAssign.includes(p.asset_id);
                   return (
                     <label
-                      key={p.projectId}
+                      key={p.asset_id}
                       className={`upac-project-row${checked ? " upac-project-row--checked" : ""}`}
                     >
                       <input
@@ -1928,16 +1928,16 @@ const UserProjectAccessPage = () => {
                         className="upac-checkbox"
                         checked={checked}
                         onChange={() => setSelectedToAssign(prev =>
-                          prev.includes(p.projectId)
-                            ? prev.filter(id => id !== p.projectId)
-                            : [...prev, p.projectId]
+                          prev.includes(p.asset_id)
+                            ? prev.filter(id => id !== p.asset_id)
+                            : [...prev, p.asset_id]
                         )}
                         disabled={assigning}
                       />
                       <FiGrid size={13} className="upac-project-icon" />
                       <div className="upac-project-info">
-                        <span className="upac-project-name">{p.projectId}</span>
-                        {p.deviceId && <span className="upac-project-device">{p.deviceId}</span>}
+                        <span className="upac-project-name">{p.asset_id}</span>
+                        {p.client_id && <span className="upac-project-device">{p.client_id}</span>}
                       </div>
                       {checked && <FiCheck size={13} className="upac-project-check" />}
                     </label>

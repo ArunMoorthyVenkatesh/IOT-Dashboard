@@ -60,6 +60,8 @@ const IcoAlert = () => (
   </svg>
 );
 
+// IcoPower kept for potential future use
+// eslint-disable-next-line no-unused-vars
 const IcoPower = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
     strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -97,6 +99,7 @@ const IcoActivity = () => (
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line no-unused-vars
 const FIELD_LABELS = {
   Pump_speed:      "Pump Speed (RPM)",
   Flow_1:          "Flow 1 (m\u00b3/hr)",
@@ -503,7 +506,6 @@ const IoTDashboard = ({ projectId: propProjectId, embedded = false }) => {
   const navigate      = useNavigate();
 
   const [data, setData]               = useState({});
-  const [deviceId, setDeviceId]       = useState("");
   const [clientId, setClientId]       = useState("");
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState("");
@@ -522,7 +524,7 @@ const IoTDashboard = ({ projectId: propProjectId, embedded = false }) => {
       );
       if (!project) {
         setError("Project not found. It may have been removed or you don\u2019t have access.");
-        setDeviceId(""); setClientId(""); setData({});
+        setClientId(""); setData({});
         return;
       }
       // data is stored as a JSON string in DynamoDB
@@ -533,7 +535,6 @@ const IoTDashboard = ({ projectId: propProjectId, embedded = false }) => {
           : (project.data || {});
       } catch { sensorData = {}; }
 
-      setDeviceId(project.asset_id || "");
       setClientId(project.client_id || "");
       setData(sensorData);
       setLastUpdated(project.timestamp || new Date().toISOString());
@@ -575,7 +576,7 @@ const IoTDashboard = ({ projectId: propProjectId, embedded = false }) => {
       {!embedded && (
         <HeaderBar onRefresh={() => embedded ? fetchProject() : navigate(0)} />
       )}
-      <ProjectInfoBar projectId={projectId} deviceId={deviceId} clientId={clientId} lastUpdated={lastUpdated} />
+      <ProjectInfoBar projectId={projectId} clientId={clientId} lastUpdated={lastUpdated} />
 
       {/* ── Tab Navigation ── */}
       <nav className="dash-tabs" aria-label="Dashboard sections">

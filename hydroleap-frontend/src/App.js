@@ -5,10 +5,11 @@ import ErrorBoundary from "./components/ErrorBoundary";
 
 // ── Lazy-loaded route components ─────────────────────────────────────────────
 
-const Landing   = lazy(() => import("./components/Landing"));
-const Login     = lazy(() => import("./components/Login"));
-const Register  = lazy(() => import("./components/Register"));
-const Dashboard = lazy(() => import("./components/Dashboard"));
+const Landing      = lazy(() => import("./components/Landing"));
+const Login        = lazy(() => import("./components/Login"));
+const Register     = lazy(() => import("./components/Register"));
+const Dashboard    = lazy(() => import("./components/Dashboard"));
+const IoTDashboard = lazy(() => import("./components/IoTDashboard"));
 
 // ── Route-level suspense fallback ─────────────────────────────────────────────
 const PageLoader = () => (
@@ -54,6 +55,9 @@ const App = () => (
 
               {/* Unified dashboard — all post-login content */}
               <Route path="/dashboard" element={<Dashboard />} />
+
+              {/* IoT device dashboard */}
+              <Route path="/iot/:projectId" element={<IoTDashboard />} />
 
               {/* Legacy redirects — keep old bookmarked URLs working */}
               <Route path="/admin-dashboard"  element={<Navigate to="/dashboard" replace />} />

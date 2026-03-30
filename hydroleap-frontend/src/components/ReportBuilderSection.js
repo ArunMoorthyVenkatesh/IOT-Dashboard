@@ -18,24 +18,26 @@ dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
 
 const FIELD_LABELS = {
-  FIT_01:           "FIT-01 · Flow 1 (m³/hr)",
-  FIT_02:           "FIT-02 · Flow 2 (m³/hr)",
-  LIT_01:           "LIT-01 · Level 1 (m)",
-  LIT_02:           "LIT-02 · Level 2 (m)",
-  Rectifier_V:      "Rectifier Voltage (V)",
-  Rectifier_A:      "Rectifier Current (A)",
-  Temperature:      "Temperature (°C)",
-  Pressure:         "Pressure (bar)",
-  "system running": "System Running",
-  Pump_01:          "Pump",
-  Rectifier_01:     "Rectifier",
+  Pump_speed:       "Pump Speed (RPM)",
+  Flow_1:           "Flow 1 (m³/hr)",
+  Flow_2:           "Flow 2 (m³/hr)",
+  Pressure_1:       "Pressure 1 (bar)",
+  Pressure_2:       "Pressure 2 (bar)",
+  Temperature_1:    "Temperature 1 (°C)",
+  Temperature_2:    "Temperature 2 (°C)",
+  Rectifier_1_Vol:  "Rectifier 1 Voltage (V)",
+  Rectifier_1_Amps: "Rectifier 1 Current (A)",
+  Rectifier_2_Vol:  "Rectifier 2 Voltage (V)",
+  Rectifier_2_Amps: "Rectifier 2 Current (A)",
+  Rectifier_1_ON:   "Rectifier 1 ON",
+  Rectifier_2_ON:   "Rectifier 2 ON",
 };
 
 // Keys that are not numeric / not suitable for line graphs
-const NON_NUMERIC = ["system running", "Pump_01", "Rectifier_01"];
+const NON_NUMERIC = ["Rectifier_1_ON", "Rectifier_2_ON"];
 
-const EXCLUDED     = ["projectId", "project_id", "deviceId", "device_id", "timestamp"];
-const getProjectId = (p) => p?.projectId || p?.project_id || p?.id || p;
+const EXCLUDED     = ["pk", "asset_id", "client_id", "timestamp"];
+const getProjectId = (p) => p?.asset_id || p?.projectId || p?.project_id || p?.id || p;
 
 const fmtTime  = (ts) => dayjs(ts).format("DD MMM, h:mm A");
 const fmtDate  = (ts) => dayjs(ts).format("DD MMM YYYY, h:mm:ss A");
