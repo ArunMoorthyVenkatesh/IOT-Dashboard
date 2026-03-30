@@ -98,50 +98,56 @@ const IcoActivity = () => (
 // ── Constants ──────────────────────────────────────────────────────────────────
 
 const FIELD_LABELS = {
-  FIT_01:       "FIT-01 (Flow 1, m\u00b3/hr)",
-  FIT_02:       "FIT-02 (Flow 2, m\u00b3/hr)",
-  LIT_01:       "LIT-01 (Level 1, m)",
-  LIT_02:       "LIT-02 (Level 2, m)",
-  Rectifier_V:  "Rectifier Voltage (V)",
-  Rectifier_A:  "Rectifier Current (A)",
-  Temperature:  "Temperature (\u00b0C)",
-  Pressure:     "Pressure (bar)",
-  "system running": "System Running",
-  Pump_01:      "Pump",
-  Rectifier_01: "Rectifier",
+  Pump_speed:      "Pump Speed (RPM)",
+  Flow_1:          "Flow 1 (m\u00b3/hr)",
+  Flow_2:          "Flow 2 (m\u00b3/hr)",
+  Pressure_1:      "Pressure 1 (bar)",
+  Pressure_2:      "Pressure 2 (bar)",
+  Temperature_1:   "Temperature 1 (\u00b0C)",
+  Temperature_2:   "Temperature 2 (\u00b0C)",
+  Rectifier_1_ON:  "Rectifier 1",
+  Rectifier_2_ON:  "Rectifier 2",
+  Rectifier_1_Vol: "Rectifier 1 Voltage (V)",
+  Rectifier_1_Amps:"Rectifier 1 Current (A)",
+  Rectifier_2_Vol: "Rectifier 2 Voltage (V)",
+  Rectifier_2_Amps:"Rectifier 2 Current (A)",
 };
 
 const GAUGE_META = [
-  { field: "FIT_01",      label: FIELD_LABELS.FIT_01,      max: 15, unit: "m\u00b3/hr" },
-  { field: "FIT_02",      label: FIELD_LABELS.FIT_02,      max: 15, unit: "m\u00b3/hr" },
-  { field: "LIT_01",      label: FIELD_LABELS.LIT_01,      max: 2,  unit: "m" },
-  { field: "LIT_02",      label: FIELD_LABELS.LIT_02,      max: 2,  unit: "m" },
-  { field: "Rectifier_V", label: FIELD_LABELS.Rectifier_V, max: 30, unit: "V" },
-  { field: "Rectifier_A", label: FIELD_LABELS.Rectifier_A, max: 30, unit: "A" },
-  { field: "Temperature", label: FIELD_LABELS.Temperature,  max: 50, unit: "\u00b0C" },
-  { field: "Pressure",    label: FIELD_LABELS.Pressure,     max: 10, unit: "bar" },
+  { field: "Flow_1",          label: "Flow 1",            max: 15,  unit: "m\u00b3/hr" },
+  { field: "Flow_2",          label: "Flow 2",            max: 15,  unit: "m\u00b3/hr" },
+  { field: "Pressure_1",      label: "Pressure 1",        max: 20,  unit: "bar" },
+  { field: "Pressure_2",      label: "Pressure 2",        max: 20,  unit: "bar" },
+  { field: "Temperature_1",   label: "Temperature 1",     max: 400, unit: "\u00b0C" },
+  { field: "Temperature_2",   label: "Temperature 2",     max: 400, unit: "\u00b0C" },
+  { field: "Rectifier_1_Vol", label: "Rectifier 1 (V)",   max: 50,  unit: "V" },
+  { field: "Rectifier_1_Amps",label: "Rectifier 1 (A)",   max: 30,  unit: "A" },
+  { field: "Rectifier_2_Vol", label: "Rectifier 2 (V)",   max: 50,  unit: "V" },
+  { field: "Rectifier_2_Amps",label: "Rectifier 2 (A)",   max: 30,  unit: "A" },
 ];
 
 const SYSTEM_META = [
-  { key: "system_running", label: "System",    icon: <IcoPower />,   color: "#10b981" },
-  { key: "Pump_01",        label: "Pump",      icon: <IcoDroplet />, color: "#3b82f6" },
-  { key: "Rectifier_01",   label: "Rectifier", icon: <IcoZap />,     color: "#f59e0b" },
+  { key: "Rectifier_1_ON", label: "Rectifier 1", icon: <IcoZap />,     color: "#f59e0b" },
+  { key: "Rectifier_2_ON", label: "Rectifier 2", icon: <IcoZap />,     color: "#f97316" },
 ];
 
 const REALTIME_FIELDS = [
-  { key: "Temperature", label: "Temperature", icon: <IcoThermometer />, color: "#f59e0b", unit: "\u00b0C" },
-  { key: "Pressure",    label: "Pressure",    icon: <IcoActivity />,   color: "#8b5cf6", unit: "bar" },
-  { key: "FIT_01",      label: "Flow 1",      icon: <IcoDroplet />,    color: "#3b82f6", unit: "m\u00b3/hr" },
-  { key: "FIT_02",      label: "Flow 2",      icon: <IcoDroplet />,    color: "#10b981", unit: "m\u00b3/hr" },
-  { key: "LIT_01",      label: "Level 1",     icon: <IcoActivity />,   color: "#f97316", unit: "m" },
-  { key: "LIT_02",      label: "Level 2",     icon: <IcoActivity />,   color: "#ec4899", unit: "m" },
-  { key: "Rectifier_V", label: "Voltage",     icon: <IcoZap />,        color: "#00d4c8", unit: "V" },
-  { key: "Rectifier_A", label: "Current",     icon: <IcoZap />,        color: "#a78bfa", unit: "A" },
+  { key: "Pump_speed",       label: "Pump Speed",      icon: <IcoDroplet />,    color: "#3b82f6", unit: "RPM" },
+  { key: "Flow_1",           label: "Flow 1",           icon: <IcoDroplet />,    color: "#10b981", unit: "m\u00b3/hr" },
+  { key: "Flow_2",           label: "Flow 2",           icon: <IcoDroplet />,    color: "#00d4c8", unit: "m\u00b3/hr" },
+  { key: "Pressure_1",       label: "Pressure 1",       icon: <IcoActivity />,   color: "#8b5cf6", unit: "bar" },
+  { key: "Pressure_2",       label: "Pressure 2",       icon: <IcoActivity />,   color: "#a78bfa", unit: "bar" },
+  { key: "Temperature_1",    label: "Temperature 1",    icon: <IcoThermometer />,color: "#f59e0b", unit: "\u00b0C" },
+  { key: "Temperature_2",    label: "Temperature 2",    icon: <IcoThermometer />,color: "#f97316", unit: "\u00b0C" },
+  { key: "Rectifier_1_Vol",  label: "Rectifier 1 (V)",  icon: <IcoZap />,        color: "#ec4899", unit: "V" },
+  { key: "Rectifier_1_Amps", label: "Rectifier 1 (A)",  icon: <IcoZap />,        color: "#ef4444", unit: "A" },
+  { key: "Rectifier_2_Vol",  label: "Rectifier 2 (V)",  icon: <IcoZap />,        color: "#00d4c8", unit: "V" },
+  { key: "Rectifier_2_Amps", label: "Rectifier 2 (A)",  icon: <IcoZap />,        color: "#a78bfa", unit: "A" },
 ];
 
 const AUDIT_EXCLUDED = [
-  "projectId", "project_id", "deviceId", "device_id", "timestamp",
-  "system_running", "Rectifier_01", "Pump_01",
+  "pk", "asset_id", "client_id", "timestamp",
+  "Rectifier_1_ON", "Rectifier_2_ON",
 ];
 
 const CHART_COLORS = [
@@ -241,16 +247,16 @@ const HeaderBar = ({ onRefresh }) => {
 
 // ── Project Info Bar ──────────────────────────────────────────────────────────
 
-const ProjectInfoBar = ({ projectId, deviceId, lastUpdated }) => (
+const ProjectInfoBar = ({ projectId, deviceId, clientId, lastUpdated }) => (
   <div className="project-bar">
     <div className="project-bar-left">
-      <span className="project-bar-label">Project</span>
+      <span className="project-bar-label">Asset</span>
       <span className="project-id-badge">{projectId}</span>
-      {deviceId && (
+      {clientId && (
         <>
           <span className="project-bar-sep" aria-hidden="true" />
-          <span className="project-bar-label">Device</span>
-          <strong className="project-device">{deviceId}</strong>
+          <span className="project-bar-label">Client</span>
+          <strong className="project-device">{clientId}</strong>
         </>
       )}
     </div>
@@ -335,7 +341,7 @@ const DateFilter = ({ from, to, onFrom, onTo }) => (
 
 // ── KV Display ───────────────────────────────────────────────────────────────
 
-const KV_SKIP = new Set(["projectId", "project_id", "deviceId", "device_id", "timestamp"]);
+const KV_SKIP = new Set(["pk", "asset_id", "client_id", "timestamp"]);
 
 const KVDisplay = ({ data }) => {
   const entries = Object.entries(data || {}).filter(([k]) => !KV_SKIP.has(k));
@@ -498,6 +504,7 @@ const IoTDashboard = ({ projectId: propProjectId, embedded = false }) => {
 
   const [data, setData]               = useState({});
   const [deviceId, setDeviceId]       = useState("");
+  const [clientId, setClientId]       = useState("");
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState("");
   const [auditLogs, setAuditLogs]     = useState([]);
@@ -511,16 +518,25 @@ const IoTDashboard = ({ projectId: propProjectId, embedded = false }) => {
       let projects = res.projects || res || [];
       if (!Array.isArray(projects)) projects = [];
       const project = projects.find(p =>
-        p.projectId === projectId || p.project_id === projectId || p.id === projectId
+        p.asset_id === projectId || p.pk?.endsWith(`#${projectId}`)
       );
       if (!project) {
         setError("Project not found. It may have been removed or you don\u2019t have access.");
-        setDeviceId(""); setData({});
+        setDeviceId(""); setClientId(""); setData({});
         return;
       }
-      setDeviceId(project.deviceId || project.device_id || project.id || "");
-      setData(project);
-      setLastUpdated(new Date().toISOString());
+      // data is stored as a JSON string in DynamoDB
+      let sensorData = {};
+      try {
+        sensorData = typeof project.data === "string"
+          ? JSON.parse(project.data)
+          : (project.data || {});
+      } catch { sensorData = {}; }
+
+      setDeviceId(project.asset_id || "");
+      setClientId(project.client_id || "");
+      setData(sensorData);
+      setLastUpdated(project.timestamp || new Date().toISOString());
       setError("");
     } catch (err) {
       setError(err.message || "Failed to load project data.");
@@ -539,7 +555,7 @@ const IoTDashboard = ({ projectId: propProjectId, embedded = false }) => {
 
   useEffect(() => {
     let mounted = true;
-    getCloudWatchLogs(projectId)
+    getCloudWatchLogs(projectId)  // projectId here = asset_id
       .then(res => {
         if (!mounted) return;
         const events = res?.events || [];
@@ -559,7 +575,7 @@ const IoTDashboard = ({ projectId: propProjectId, embedded = false }) => {
       {!embedded && (
         <HeaderBar onRefresh={() => embedded ? fetchProject() : navigate(0)} />
       )}
-      <ProjectInfoBar projectId={projectId} deviceId={deviceId} lastUpdated={lastUpdated} />
+      <ProjectInfoBar projectId={projectId} deviceId={deviceId} clientId={clientId} lastUpdated={lastUpdated} />
 
       {/* ── Tab Navigation ── */}
       <nav className="dash-tabs" aria-label="Dashboard sections">

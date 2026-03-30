@@ -393,8 +393,9 @@ def handle_admin_request(
 @router.get("/projects")
 def list_projects(Authorization: Optional[str] = Header(None)):
     """Return projects scoped to the caller's company (Hydroleap sees all).
-    Regular users are authenticated but receive all projects — the frontend
-    already filters the list down to only their assigned project IDs.
+    Company admins see projects where client_id matches their company, plus
+    any explicitly granted via CompanyProjectAccess.
+    Regular users receive all projects — the frontend filters by their access IDs.
     """
     token = _require_token(Authorization)
     payload = decode_jwt(token)
@@ -410,12 +411,18 @@ def list_projects(Authorization: Optional[str] = Header(None)):
         caller_company = (caller_admin[0].get("company_name") or "").strip().lower()
         if caller_company == "hydroleap":
             return {"projects": all_projects}
-        company_project_ids = {
-            item["projectId"]
+        # Projects owned by the company (client_id match) + explicitly granted ones
+        granted_asset_ids = {
+            item["asset_id"]
             for item in company_project_access_table.scan().get("Items", [])
             if (item.get("company") or "").strip().lower() == caller_company
         }
-        return {"projects": [p for p in all_projects if p.get("projectId") in company_project_ids]}
+        filtered = [
+            p for p in all_projects
+            if (p.get("client_id") or "").strip().lower() == caller_company
+            or p.get("asset_id") in granted_asset_ids
+        ]
+        return {"projects": filtered}
 
     # Fall through to regular users — frontend filters by their own access IDs
     caller_user = approved_users_table.scan(FilterExpression=Attr("email").eq(caller_email)).get("Items", [])
@@ -445,8 +452,7 @@ def get_companies():
 @router.get("/company-accesses")
 def list_company_project_accesses(company: str = None):
     """
-    Return all company-project accesses in the CompanyProjectAccess table.
-    If company is provided, only return entries for that company.
+    Return all company-project accesses. asset_id is used as the project identifier.
     """
     if company:
         response = company_project_access_table.query(
@@ -460,10 +466,11 @@ def list_company_project_accesses(company: str = None):
 @router.post("/company-accesses/assign")
 def assign_projects_to_company(data: dict = Body(...)):
     """
-    Assign a list of projects to a company (replace all previous assignments).
+    Assign a list of asset_ids to a company (replace all previous assignments).
+    Expects: { "company": "PUB_CT", "projectIds": ["EO009-SG", "EO010-SG"] }
     """
     company = data.get("company")
-    project_ids = data.get("projectIds", [])
+    asset_ids = data.get("projectIds", [])
     if not company:
         raise HTTPException(status_code=400, detail="Missing company")
     # Remove previous assignments for this company
@@ -472,14 +479,14 @@ def assign_projects_to_company(data: dict = Body(...)):
     ).get("Items", [])
     for item in existing:
         company_project_access_table.delete_item(
-            Key={"company": company, "projectId": item["projectId"]}
+            Key={"company": company, "asset_id": item["asset_id"]}
         )
-    for pid in project_ids:
+    for aid in asset_ids:
         company_project_access_table.put_item(
             Item={
-                "company": company,
-                "projectId": pid,
-                "accessGrantedAt": datetime.utcnow().isoformat()
+                "company":          company,
+                "asset_id":         aid,
+                "accessGrantedAt":  datetime.utcnow().isoformat()
             }
         )
     return {"message": "Assignments updated"}
@@ -487,18 +494,18 @@ def assign_projects_to_company(data: dict = Body(...)):
 @router.post("/company-accesses/remove")
 def remove_company_project_assignments(data: dict = Body(...)):
     """
-    Remove selected projects from a company assignment.
-    Expects: { "company": "CDS Agencies", "projectIds": ["P1002", "P1003"] }
+    Remove selected asset_ids from a company assignment.
+    Expects: { "company": "PUB_CT", "projectIds": ["EO009-SG"] }
     """
     company = data.get("company")
-    project_ids = data.get("projectIds")
-    if not company or not project_ids or not isinstance(project_ids, list):
+    asset_ids = data.get("projectIds")
+    if not company or not asset_ids or not isinstance(asset_ids, list):
         raise HTTPException(status_code=400, detail="Missing or invalid parameters.")
 
     deleted = 0
-    for pid in project_ids:
+    for aid in asset_ids:
         response = company_project_access_table.delete_item(
-            Key={"company": company, "projectId": pid}
+            Key={"company": company, "asset_id": aid}
         )
         if response.get("ResponseMetadata", {}).get("HTTPStatusCode", 200) == 200:
             deleted += 1
@@ -527,30 +534,30 @@ def list_user_project_accesses(email: str = None):
 def remove_user_project_assignment(data: dict = Body(...)):
     """
     Remove a project assignment from a user.
-    Expects: { "email": "sample03@gmail.com", "projectId": "P1001" }
+    Expects: { "email": "user@example.com", "projectId": "EO009-SG" }
     """
-    email = data.get("email")
-    projectId = data.get("projectId")
-    if not email or not projectId:
+    email    = data.get("email")
+    asset_id = data.get("projectId")
+    if not email or not asset_id:
         raise HTTPException(status_code=400, detail="Missing email or projectId.")
 
     resp = user_project_access_table.delete_item(
-        Key={"email": email, "projectId": projectId}
+        Key={"email": email, "asset_id": asset_id}
     )
     if resp.get("ResponseMetadata", {}).get("HTTPStatusCode", 200) == 200:
-        return {"message": f"Assignment removed for {email} - {projectId}"}
+        return {"message": f"Assignment removed for {email} - {asset_id}"}
     else:
         raise HTTPException(status_code=500, detail="Failed to remove access.")
-    
+
 @router.post("/user-accesses/assign")
 def assign_user_project_access(data: dict = Body(...)):
     """
     Assigns (replaces) a user's project access.
-    Expects: { "email": "...", "projectIds": ["P1001", "P1002"] }
+    Expects: { "email": "...", "projectIds": ["EO009-SG", "EO010-SG"] }
     """
-    email = data.get("email")
-    project_ids = data.get("projectIds")
-    if not email or not isinstance(project_ids, list):
+    email     = data.get("email")
+    asset_ids = data.get("projectIds")
+    if not email or not isinstance(asset_ids, list):
         raise HTTPException(status_code=400, detail="Missing or invalid parameters.")
 
     # Remove previous assignments for the user
@@ -558,14 +565,14 @@ def assign_user_project_access(data: dict = Body(...)):
         KeyConditionExpression=Key("email").eq(email)
     ).get("Items", [])
     for item in existing:
-        user_project_access_table.delete_item(Key={"email": email, "projectId": item["projectId"]})
+        user_project_access_table.delete_item(Key={"email": email, "asset_id": item["asset_id"]})
 
     # Add new assignments
-    for pid in project_ids:
+    for aid in asset_ids:
         user_project_access_table.put_item(
             Item={
-                "email": email,
-                "projectId": pid,
+                "email":           email,
+                "asset_id":        aid,
                 "accessGrantedAt": datetime.utcnow().isoformat()
             }
         )

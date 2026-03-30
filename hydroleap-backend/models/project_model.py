@@ -1,21 +1,30 @@
-#hydroleap-backend/models/project_model.py
+# hydroleap-backend/models/project_model.py
 from pydantic import BaseModel, Field
 from typing import Optional
 
+
+class SensorData(BaseModel):
+    Pump_speed: Optional[float] = None
+    Flow_1: Optional[float] = None
+    Flow_2: Optional[float] = None
+    Pressure_1: Optional[float] = None
+    Pressure_2: Optional[float] = None
+    Temperature_1: Optional[float] = None
+    Temperature_2: Optional[float] = None
+    Rectifier_1_ON: Optional[bool] = None
+    Rectifier_2_ON: Optional[bool] = None
+    Rectifier_1_Vol: Optional[float] = None
+    Rectifier_1_Amps: Optional[float] = None
+    Rectifier_2_Vol: Optional[float] = None
+    Rectifier_2_Amps: Optional[float] = None
+
+
 class ProjectModel(BaseModel):
-    projectId: str = Field(..., description="Unique project identifier")
-    deviceId: str = Field(..., description="Unique device identifier")
-    system_running: Optional[bool] = Field(None, alias="system_running")
-    Pump_01: Optional[bool] = None
-    FIT_01: Optional[float] = None
-    Pressure: Optional[float] = None
-    Temperature: Optional[float] = None
-    FIT_02: Optional[float] = None
-    LIT_01: Optional[float] = None
-    LIT_02: Optional[float] = None
-    Rectifier_01: Optional[bool] = None
-    Rectifier_V: Optional[float] = None
-    Rectifier_A: Optional[float] = None
+    pk: str = Field(..., description="Composite key: client_id#asset_id")
+    asset_id: str = Field(..., description="Device/asset identifier")
+    client_id: str = Field(..., description="Company/client identifier")
+    data: str = Field(..., description="JSON string of sensor readings")
+    timestamp: Optional[str] = None
 
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
